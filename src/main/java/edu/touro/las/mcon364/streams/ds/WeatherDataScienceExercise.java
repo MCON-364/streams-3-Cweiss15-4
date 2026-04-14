@@ -31,38 +31,33 @@ public class WeatherDataScienceExercise {
         System.out.println("Total raw rows (excluding header): " + (rows.size() - 1));
         System.out.println("Total cleaned rows: " + cleaned.size());
 
-        // TODO 1:
-        // Count how many valid weather records remain after cleaning.
+        double avg = cleaned.stream().mapToDouble(WeatherRecord::temperatureC).average().orElse(0.0);
 
-        // TODO 2:
-        // Compute the average temperature across all valid rows.
-
-        // TODO 3:
         // Find the city with the highest average temperature.
+        String high = cleaned.stream().collect(Collectors.groupingBy(WeatherRecord::city, Collectors.averagingDouble(WeatherRecord::temperatureC))).entrySet().stream().max(Comparator.comparing(Map.Entry::getValue)).map(Map.Entry::getKey).get();
 
-        // TODO 4:
         // Group records by city.
+        Map<String, List<WeatherRecord>> groups = cleaned.stream().collect(Collectors.groupingBy(WeatherRecord::city));
 
-        // TODO 5:
         // Compute average precipitation by city.
+        Map<String, Double> avgGroup = cleaned.stream().collect(Collectors.groupingBy(WeatherRecord::city, Collectors.averagingDouble(WeatherRecord::precipitationMm)));
 
-        // TODO 6:
         // Partition rows into freezing days (temperature <= 0)
         // and non-freezing days (temperature > 0).
+        Map<Boolean, List<WeatherRecord>> freezing = cleaned.stream().collect(Collectors.partitioningBy(w -> w.temperatureC <= 0));
 
-        // TODO 7:
         // Create a Set<String> of all distinct cities.
+        Set<String> cities = cleaned.stream().map(WeatherRecord::city).collect(Collectors.toSet());
 
-        // TODO 8:
         // Find the wettest single day.
+        WeatherRecord wettest = cleaned.stream().max(Comparator.comparingDouble(WeatherRecord::precipitationMm)).orElse(null);
 
-        // TODO 9:
         // Create a Map<String, Double> from city to average humidity.
+        Map<String, Double> humidity = cleaned.stream().collect(Collectors.groupingBy(WeatherRecord::city, Collectors.averagingDouble(r -> r.humidity)));
 
-        // TODO 10:
         // Produce a list of formatted strings like:
         // "Miami on 2025-01-02: 25.1C, humidity 82%"
-
+        List<String> formatted = cleaned.stream().map(r -> r.city + "on" + r.date + ": " + r.temperatureC + "C, humidity" + r.humidity + "%").collect(Collectors.toList());
         // TODO 11 (optional):
         // Build a Map<String, CityWeatherSummary> for all cities.
 
@@ -70,24 +65,29 @@ public class WeatherDataScienceExercise {
     }
 
     static Optional<WeatherRecord> parseRow(String row) {
-        // TODO:
-        // 1. Split the row by commas
-        // 2. Reject malformed rows
-        // 3. Reject rows with missing temperature
-        // 4. Parse numeric values safely
-        // 5. Return Optional.empty() if parsing fails
-
-        throw new UnsupportedOperationException("TODO: implement parseRow");
+        String[] parts = row.split(",");
+        if (parts.length != 6) {return Optional.empty();}
+        if (parts[3].isBlank()) {return Optional.empty();}
+        try{
+            Double.parseDouble(parts[3]);
+        }
+        catch(NumberFormatException nfe){
+            return Optional.empty();
+        }
+        String stationId = parts[0].trim();
+        String city = parts[1].trim();
+        String date = parts[2].trim();
+        double temperatureC = Double.parseDouble(parts[3].trim());
+        int humidity = Integer.parseInt(parts[4].trim());
+        double precipitationMm = Double.parseDouble(parts[5].trim());
+        return Optional.of(new WeatherRecord(stationId, city, date, temperatureC, humidity, precipitationMm));
     }
 
     static boolean isValid(WeatherRecord r) {
-        // TODO:
-        // Keep only rows where:
-        // - temperature is between -60 and 60
-        // - humidity is between 0 and 100
-        // - precipitation is >= 0
-
-        throw new UnsupportedOperationException("TODO: implement isValid");
+        if (r.temperatureC<-60||r.temperatureC>60) {return false;}
+        if (r.humidity<0||r.humidity>100) {return false;}
+        if (r.precipitationMm<0) {return false;}
+        return true;
     }
 
     record CityWeatherSummary(
